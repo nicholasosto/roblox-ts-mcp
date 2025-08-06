@@ -1,0 +1,25 @@
+{
+  "name": "roblox-ts-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for Roblox-ts development with best practices and library enforcement",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsc && node dist/server.js",
+    "test": "node test-mcp.mjs",
+    "clean": "rmdir /s /q dist 2>nul || rm -rf dist"
+  },
+  "keywords": ["mcp", "roblox-ts", "typescript", "model-context-protocol"],
+  "author": "",
+  "license": "MIT",
+  "type": "commonjs",
+  "devDependencies": {
+    "@types/node": "^24.2.0",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.1",
+    "zod": "^3.25.76"
+  }
+}

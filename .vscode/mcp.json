@@ -1,0 +1,9 @@
+{
+  "servers": {
+    "roblox-ts-mcp": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["dist/server.js"]
+    }
+  }
+}
