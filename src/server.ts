@@ -19,7 +19,7 @@ class RobloxTSMCPServer {
     this.server = new Server(
       {
         name: 'RobloxTS-MCP',
-        version: '1.0.0',
+        version: '1.0.2',
       },
       {
         capabilities: {

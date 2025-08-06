@@ -530,13 +530,15 @@ async function searchRobloxDocs(query: string, limit: number = 5): Promise<{ res
 
   try {
     const commonPages = [
-      { title: 'RemoteEvents and Callbacks', url: 'https://create.roblox.com/docs/scripting/events/remote-events-and-callbacks', keywords: ['remote', 'event', 'callback', 'networking'] },
-      { title: 'DataStores', url: 'https://create.roblox.com/docs/cloud-services/data-stores', keywords: ['datastore', 'data', 'save', 'persistence'] },
+      { title: 'RemoteEvents and Callbacks', url: 'https://create.roblox.com/docs/scripting/events/remote', keywords: ['remote', 'event', 'callback', 'networking'] },
+      { title: 'DataStores', url: 'https://create.roblox.com/docs/cloud-services/datastores', keywords: ['datastore', 'data', 'save', 'persistence'] },
       { title: 'TweenService', url: 'https://create.roblox.com/docs/reference/engine/classes/TweenService', keywords: ['tween', 'animation', 'smooth'] },
       { title: 'UserInputService', url: 'https://create.roblox.com/docs/reference/engine/classes/UserInputService', keywords: ['input', 'keyboard', 'mouse', 'touch'] },
       { title: 'Players Service', url: 'https://create.roblox.com/docs/reference/engine/classes/Players', keywords: ['player', 'character', 'spawn'] },
       { title: 'Workspace', url: 'https://create.roblox.com/docs/reference/engine/classes/Workspace', keywords: ['workspace', 'parts', 'models'] },
-      { title: 'GUI Creation', url: 'https://create.roblox.com/docs/ui/gui-objects', keywords: ['gui', 'ui', 'interface', 'screen'] }
+      { title: 'GUI Creation', url: 'https://create.roblox.com/docs/ui/gui-objects', keywords: ['gui', 'ui', 'interface', 'screen'] },
+      { title: 'Scripting Guide', url: 'https://create.roblox.com/docs/scripting/', keywords: ['script', 'coding', 'programming', 'lua'] },
+      { title: 'Events and Callbacks', url: 'https://create.roblox.com/docs/scripting/events/', keywords: ['event', 'callback', 'listener'] }
     ];
 
     const queryLower = query.toLowerCase();
