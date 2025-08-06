@@ -8,6 +8,14 @@ import {
 import { z } from 'zod';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import { 
+  analyzePackage, 
+  suggestPackageIntegration, 
+  PackageAnalyzeSchema,
+  PackageIntegrationSchema,
+  PackageMigrationSchema,
+  PackageTroubleshootSchema 
+} from './package-assistance.js';
 
 /**
  * Tools for Roblox-ts development assistance
@@ -736,6 +744,65 @@ export function addTools(server: Server): void {
             },
             required: ['url']
           }
+        },
+        {
+          name: 'analyze-package',
+          description: 'Analyze and provide detailed assistance for a specific @rbxts package',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              packageName: {
+                type: 'string',
+                description: 'Name of the @rbxts package to analyze (e.g., "@rbxts/fusion", "@rbxts/profile-store")'
+              },
+              codeContext: {
+                type: 'string',
+                description: 'Optional existing code context for better assistance'
+              }
+            },
+            required: ['packageName']
+          }
+        },
+        {
+          name: 'suggest-package-integration',
+          description: 'Suggest how to integrate multiple @rbxts packages for a specific use case',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              packages: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'List of @rbxts packages to integrate'
+              },
+              useCase: {
+                type: 'string',
+                description: 'Specific use case or feature being built'
+              }
+            },
+            required: ['packages', 'useCase']
+          }
+        },
+        {
+          name: 'troubleshoot-package',
+          description: 'Troubleshoot common issues with @rbxts packages',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              packageName: {
+                type: 'string',
+                description: 'Package experiencing issues'
+              },
+              errorMessage: {
+                type: 'string',
+                description: 'Error message if any'
+              },
+              codeSnippet: {
+                type: 'string',
+                description: 'Code that is causing issues'
+              }
+            },
+            required: ['packageName', 'codeSnippet']
+          }
         }
       ]
     };
@@ -880,6 +947,72 @@ ${result.errors?.map(error => `- ${error}`).join('\n') || 'Unknown error'}`
 \`\`\`lua
 ${result.output}
 \`\`\``
+            }]
+          };
+        }
+
+        case 'analyze-package': {
+          const parsed = PackageAnalyzeSchema.parse(args);
+          const result = analyzePackage(parsed.packageName, parsed.codeContext);
+          
+          return {
+            content: [{
+              type: 'text',
+              text: result
+            }]
+          };
+        }
+
+        case 'suggest-package-integration': {
+          const parsed = PackageIntegrationSchema.parse(args);
+          const result = suggestPackageIntegration(parsed.packages, parsed.useCase);
+          
+          return {
+            content: [{
+              type: 'text',
+              text: result
+            }]
+          };
+        }
+
+        case 'troubleshoot-package': {
+          const parsed = PackageTroubleshootSchema.parse(args);
+          // For now, provide basic troubleshooting based on package analysis
+          const packageAnalysis = analyzePackage(parsed.packageName, parsed.codeSnippet);
+          
+          const troubleshootResult = `# Package Troubleshooting: ${parsed.packageName}
+
+## 🔍 Issue Analysis
+
+**Package:** ${parsed.packageName}
+${parsed.errorMessage ? `**Error Message:** ${parsed.errorMessage}` : ''}
+
+**Code Snippet:**
+\`\`\`typescript
+${parsed.codeSnippet}
+\`\`\`
+
+## 📋 Package Information
+
+${packageAnalysis}
+
+## 💡 Common Solutions
+
+1. **Check Import Statements**: Ensure you're importing from the correct package
+2. **Verify Types**: Make sure you're using the correct TypeScript types
+3. **Review Best Practices**: Follow the best practices listed above
+4. **Check Dependencies**: Ensure the package is properly installed in your project
+
+## 🚀 Next Steps
+
+- Compare your code against the common patterns shown above
+- Look for the common mistakes listed in the package information
+- Consider using the suggested integration patterns if using multiple packages`;
+
+          return {
+            content: [{
+              type: 'text',
+              text: troubleshootResult
             }]
           };
         }
