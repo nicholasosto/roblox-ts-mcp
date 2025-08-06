@@ -1,6 +1,6 @@
 {
   "name": "roblox-ts-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MCP server for Roblox-ts development with best practices and library enforcement",
   "main": "dist/server.js",
   "bin": {
