@@ -1,4 +1,4 @@
-import { manageGDD } from './dist/tool/gdd-manager.js';
+import { manageGDD } from '../dist/tool/gdd-manager.js';
 
 async function testGDDManager() {
   console.log('Testing GDD Manager...');

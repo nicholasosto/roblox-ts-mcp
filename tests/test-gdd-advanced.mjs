@@ -1,4 +1,4 @@
-import { manageGDD } from './dist/tool/gdd-manager.js';
+import { manageGDD } from '../dist/tool/gdd-manager.js';
 
 async function testAdvancedGDDOperations() {
   console.log('🧪 Testing Advanced GDD Manager Operations...\n');

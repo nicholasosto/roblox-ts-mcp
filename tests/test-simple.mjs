@@ -4,7 +4,7 @@
  * Simple manual test for package assistance
  */
 
-import { analyzePackage, suggestPackageIntegration } from './dist/package-assistance.js';
+import { analyzePackage, suggestPackageIntegration } from '../dist/package-assistance.js';
 
 console.log('🧪 Testing Package Assistance Functions\n');
 
