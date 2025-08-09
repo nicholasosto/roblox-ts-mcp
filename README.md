@@ -13,6 +13,9 @@ A Model Context Protocol (MCP) server designed specifically for Roblox-ts develo
 - **Syntax Validator**: Validates code for proper @rbxts library usage and best practices
 - **Pattern Generator**: Generates boilerplate code for common features (networking, data management, UI, zones)
 - **Build Simulator**: Simulates TypeScript-to-Lua compilation and catches common issues
+- **Documentation Search**: Search and summarize official Roblox documentation
+- **Package Assistant**: Analyze, integrate, and troubleshoot @rbxts packages
+- **GDD Manager**: Comprehensive Game Design Document management with structured operations for milestones, features, and tasks
 
 ### 📝 Prompt Templates
 - **Code Generation**: Generate complete Roblox-ts modules following best practices
@@ -83,9 +86,29 @@ Query these resources for development guidance:
 ### Available Tools
 
 Use these tools for code assistance:
+
 - `validate-syntax` - Check code compliance
 - `generate-pattern` - Create boilerplate code
 - `simulate-build` - Test compilation
+- `search-roblox-docs` - Search official Roblox documentation
+- `summarize-roblox-doc` - Summarize Roblox documentation pages
+- `analyze-package` - Analyze @rbxts packages
+- `suggest-package-integration` - Suggest package integration strategies
+- `troubleshoot-package` - Troubleshoot package issues
+- `gdd-manager` - Manage Game Design Documents with structured operations
+
+#### GDD Manager Tool
+
+The `gdd-manager` tool provides comprehensive Game Design Document management with support for:
+
+- **Reading & Parsing**: Parse YAML frontmatter and Markdown content
+- **Feature Management**: Add, update, and query features with priorities and milestones
+- **Task Management**: Organize tasks within features with estimates
+- **Content Updates**: Modify specific sections of document content
+- **Validation**: Comprehensive structure and reference validation
+- **Export & Reporting**: Generate summaries in Markdown, JSON, or CSV formats
+
+See [GDD-MANAGER-GUIDE.md](./GDD-MANAGER-GUIDE.md) for detailed usage instructions.
 
 ### Available Prompts
 
