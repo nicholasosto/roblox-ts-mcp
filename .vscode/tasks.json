@@ -18,6 +18,44 @@
 				"reveal": "always",
 				"panel": "new"
 			}
+		},
+		{
+			"label": "Build TypeScript",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"build"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Run Open Cloud test",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"tests/test-roblox-cloud.mjs"
+			],
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "Build TypeScript",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"build"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
 		}
 	]
 }

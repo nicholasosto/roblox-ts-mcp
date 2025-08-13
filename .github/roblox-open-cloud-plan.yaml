@@ -7,8 +7,8 @@ meta:
   branch: master
   owner: nicholasosto
   last_updated: 2025-08-13
-  status_phase: planning
-  progress_percent: 0
+  status_phase: implementation
+  progress_percent: 60
 
 objectives:
   - Build a resilient Open Cloud HTTP client (auth, retries, rate limits, error normalization).
@@ -20,19 +20,19 @@ objectives:
 requirements:
   - id: rc-1
     desc: Centralized HTTP client with x-api-key auth, timeout, and retry/backoff for 429/5xx (respect Retry-After)
-    status: todo
+  status: done
   - id: rc-2
     desc: Env-config loader with zod (ROBLOX_API_KEY, ROBLOX_UNIVERSE_ID, optional scope/timeout/retries)
-    status: todo
+  status: done
   - id: rc-3
     desc: DataStore operations: listDatastores, getEntry, setEntry (JSON-safe), optional scope override
-    status: todo
+  status: done
   - id: rc-4
     desc: Messaging publish(topic, message) with size guard and JSON serialization
-    status: todo
+  status: done
   - id: rc-5
     desc: MCP tools for DS list/get/set and MSG publish with input validation
-    status: todo
+  status: done
   - id: rc-6
     desc: Structured error mapping; redact secrets in logs and errors
     status: todo
@@ -97,23 +97,23 @@ phases:
     tasks:
       - id: t1-config
         desc: Implement config.ts with zod and safe redaction
-        status: todo
+  status: done
       - id: t2-http
         desc: Implement http.ts with axios, retries, rate-limit support
-        status: todo
+  status: done
   - name: Phase 2 - Services
     tasks:
       - id: t3-datastore
         desc: Implement datastore.ts (list/get/set) with types
-        status: todo
+  status: done
       - id: t4-messaging
         desc: Implement messaging.ts (publish) with validation
-        status: todo
+  status: done
   - name: Phase 3 - MCP wiring
     tasks:
       - id: t5-tools
         desc: Implement src/tools/roblox-cloud.ts and register tools in addTools
-        status: todo
+  status: done
   - name: Phase 4 - Tests
     tasks:
       - id: t6-tests
@@ -134,6 +134,6 @@ risks:
     mitigation: Keep middleware thin and typed; reference official docs
 
 next_steps:
-  - Create modules skeletons (config/http/datastore/messaging/tools)
-  - Wire a single tool end-to-end (robloxcloud-ds-list)
-  - Add a minimal test and verify build
+  - Add unit tests with HTTP mocks; cover ds-list/get/set, msg-publish, 429/5xx retries
+  - Update README/USAGE with env variables and example tool payloads
+  - Optional: structured error mapping in tool outputs (beyond MCP errors) for richer clients

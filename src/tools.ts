@@ -16,10 +16,8 @@ import {
   PackageTroubleshootSchema 
 } from './package-assistance.js';
 
-// Import modular tool functions
-import { validateSyntax, ValidateSyntaxSchema } from './tools/validation.js';
-import { generatePattern, GeneratePatternSchema } from './tools/pattern-generation.js';
-import { simulateBuild, SimulateBuildSchema } from './tools/build-simulation.js';
+// Import Roblox Open Cloud tool bridge
+import { RobloxCloudToolDefinitions, handleRobloxCloudTool } from './tools/roblox-cloud.js';
 
 /**
  * Tools for Roblox-ts development assistance
@@ -809,7 +807,9 @@ export function addTools(server: Server): void {
             },
             required: ['packageName', 'codeSnippet']
           }
-        }
+  },
+  // Roblox Open Cloud tools
+  ...RobloxCloudToolDefinitions
       ]
     };
   });
@@ -818,7 +818,7 @@ export function addTools(server: Server): void {
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
 
-    try {
+  try {
       switch (name) {
         case 'validate-syntax': {
           const parsed = ValidateSyntaxSchema.parse(args);
@@ -1023,8 +1023,12 @@ ${packageAnalysis}
           };
         }
 
-        default:
+        default: {
+          // Try Roblox Cloud tools
+          const maybe = await handleRobloxCloudTool(name, args);
+          if (maybe) return maybe;
           throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
+        }
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
