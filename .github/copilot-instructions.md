@@ -60,6 +60,10 @@ When generating Roblox-ts code examples or patterns:
 - Comprehensive documentation
 - Best practices enforcement
 
+## Context Plans
+
+- For ongoing Roblox Open Cloud integration work, consult `.github/roblox-open-cloud-plan.yaml` for scope, tasks, and progress. Keep updates in that YAML to minimize context size and improve coordination.
+
 ## File Structure
 
 - `src/server.ts` - Main MCP server entry point

@@ -1,0 +1,139 @@
+# Roblox Open Cloud Integration Plan
+# Purpose: Track scope, tasks, and progress for adding Roblox Open Cloud middleware and MCP tools
+
+meta:
+  title: Roblox Open Cloud Integration
+  repo: roblox-ts-mcp
+  branch: master
+  owner: nicholasosto
+  last_updated: 2025-08-13
+  status_phase: planning
+  progress_percent: 0
+
+objectives:
+  - Build a resilient Open Cloud HTTP client (auth, retries, rate limits, error normalization).
+  - Implement DataStore (list/get/set) and MessagingService (publish) modules.
+  - Expose MCP tools with zod-validated inputs and clear errors.
+  - Secure secrets via env vars; never log secrets.
+  - Add minimal tests and docs without breaking existing tools.
+
+requirements:
+  - id: rc-1
+    desc: Centralized HTTP client with x-api-key auth, timeout, and retry/backoff for 429/5xx (respect Retry-After)
+    status: todo
+  - id: rc-2
+    desc: Env-config loader with zod (ROBLOX_API_KEY, ROBLOX_UNIVERSE_ID, optional scope/timeout/retries)
+    status: todo
+  - id: rc-3
+    desc: DataStore operations: listDatastores, getEntry, setEntry (JSON-safe), optional scope override
+    status: todo
+  - id: rc-4
+    desc: Messaging publish(topic, message) with size guard and JSON serialization
+    status: todo
+  - id: rc-5
+    desc: MCP tools for DS list/get/set and MSG publish with input validation
+    status: todo
+  - id: rc-6
+    desc: Structured error mapping; redact secrets in logs and errors
+    status: todo
+  - id: rc-7
+    desc: Unit tests for success and retry paths; validation failures
+    status: todo
+  - id: rc-8
+    desc: README/USAGE updates for env setup and tool usage
+    status: todo
+
+architecture:
+  modules:
+    - path: src/roblox-cloud/config.ts
+      purpose: zod-validated env config; no secret logging; typed getters
+    - path: src/roblox-cloud/http.ts
+      purpose: axios instance with headers, retry/jitter, rate-limit handling, error normalization
+    - path: src/roblox-cloud/datastore.ts
+      purpose: list/get/set helpers; shapes for inputs/outputs
+    - path: src/roblox-cloud/messaging.ts
+      purpose: publish helper; validates topic and message size/shape
+    - path: src/tools/roblox-cloud.ts
+      purpose: MCP tool schemas/handlers; attaches to addTools
+
+config:
+  env:
+    ROBLOX_API_KEY: required
+    ROBLOX_UNIVERSE_ID: required
+    ROBLOX_SCOPE: optional
+    ROBLOX_HTTP_TIMEOUT_MS: optional
+    ROBLOX_MAX_RETRIES: optional
+  security:
+    - Never log or echo ROBLOX_API_KEY
+    - Redact Authorization/x-api-key in errors
+
+mcp_tools:
+  - name: robloxcloud-ds-list
+    input:
+      prefix: string? # optional
+      limit: number?  # 1..100 default 25
+    output: { success: boolean, datastores?: any[], error?: object }
+  - name: robloxcloud-ds-get
+    input:
+      datastoreName: string
+      key: string
+      scope: string?
+    output: { success: boolean, value?: any, etag?: string, error?: object }
+  - name: robloxcloud-ds-set
+    input:
+      datastoreName: string
+      key: string
+      value: any
+      scope: string?
+    output: { success: boolean, etag?: string, error?: object }
+  - name: robloxcloud-msg-publish
+    input:
+      topic: string
+      message: any
+    output: { success: boolean, id?: string, error?: object }
+
+phases:
+  - name: Phase 1 - Foundations
+    tasks:
+      - id: t1-config
+        desc: Implement config.ts with zod and safe redaction
+        status: todo
+      - id: t2-http
+        desc: Implement http.ts with axios, retries, rate-limit support
+        status: todo
+  - name: Phase 2 - Services
+    tasks:
+      - id: t3-datastore
+        desc: Implement datastore.ts (list/get/set) with types
+        status: todo
+      - id: t4-messaging
+        desc: Implement messaging.ts (publish) with validation
+        status: todo
+  - name: Phase 3 - MCP wiring
+    tasks:
+      - id: t5-tools
+        desc: Implement src/tools/roblox-cloud.ts and register tools in addTools
+        status: todo
+  - name: Phase 4 - Tests
+    tasks:
+      - id: t6-tests
+        desc: Add unit tests with HTTP mocks; cover retries and validation
+        status: todo
+  - name: Phase 5 - Docs
+    tasks:
+      - id: t7-docs
+        desc: Update README/USAGE with env, examples, and cautions
+        status: todo
+
+risks:
+  - r1: Hitting rate limits during testing
+    mitigation: Provide mock mode and throttle; respect Retry-After
+  - r2: Secret leakage via logs
+    mitigation: Centralized redaction in http.ts; minimal error details
+  - r3: API surface drift
+    mitigation: Keep middleware thin and typed; reference official docs
+
+next_steps:
+  - Create modules skeletons (config/http/datastore/messaging/tools)
+  - Wire a single tool end-to-end (robloxcloud-ds-list)
+  - Add a minimal test and verify build

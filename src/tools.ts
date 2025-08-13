@@ -17,14 +17,28 @@ import {
 } from './package-assistance.js';
 
 // Import modular tool functions
-import { validateSyntax, ValidateSyntaxSchema } from './tool/validation.js';
-import { generatePattern, GeneratePatternSchema } from './tool/pattern-generation.js';
-import { simulateBuild, SimulateBuildSchema } from './tool/build-simulation.js';
-import { manageGDD, GDDManagerSchema } from './tool/gdd-manager.js';
+import { validateSyntax, ValidateSyntaxSchema } from './tools/validation.js';
+import { generatePattern, GeneratePatternSchema } from './tools/pattern-generation.js';
+import { simulateBuild, SimulateBuildSchema } from './tools/build-simulation.js';
 
 /**
  * Tools for Roblox-ts development assistance
  */
+
+// Validation schemas
+const ValidateSyntaxSchema = z.object({
+  code: z.string().describe('Roblox-ts code to validate'),
+});
+
+const GeneratePatternSchema = z.object({
+  feature: z.string().describe('Feature to generate pattern for'),
+  libraries: z.array(z.string()).optional().describe('Specific @rbxts libraries to use'),
+});
+
+const SimulateBuildSchema = z.object({
+  code: z.string().describe('TypeScript code to simulate compilation'),
+  target: z.enum(['server', 'client', 'shared']).optional().describe('Target environment'),
+});
 
 const SearchRobloxDocsSchema = z.object({
   query: z.string().describe('Search query for Roblox documentation'),
@@ -34,6 +48,477 @@ const SearchRobloxDocsSchema = z.object({
 const SummarizeRobloxDocSchema = z.object({
   url: z.string().describe('URL of the Roblox documentation page to summarize'),
 });
+
+/**
+ * Validate Roblox-ts code for proper syntax and library usage
+ */
+function validateSyntax(code: string): { valid: boolean; errors: string[]; warnings: string[]; suggestions: string[] } {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const suggestions: string[] = [];
+
+  // Check for proper service imports
+  if (code.includes('game.GetService') && !code.includes('@rbxts/services')) {
+    errors.push('Use @rbxts/services for service imports instead of game.GetService()');
+    suggestions.push('Replace game.GetService("Players") with import { Players } from "@rbxts/services"');
+  }
+
+  // Check for networking without @rbxts/net
+  if ((code.includes('RemoteEvent') || code.includes('RemoteFunction')) && !code.includes('@rbxts/net')) {
+    warnings.push('Consider using @rbxts/net for type-safe networking instead of raw RemoteEvents');
+    suggestions.push('Install @rbxts/net and define remote events with type safety');
+  }
+
+  // Check for data storage without ProfileStore
+  if (code.includes('DataStoreService') && !code.includes('@rbxts/profile-store')) {
+    warnings.push('Consider using @rbxts/profile-store for robust data management');
+    suggestions.push('ProfileStore provides session locking and data reconciliation');
+  }
+
+  // Check for zone detection with Touched events
+  if (code.includes('.Touched') && !code.includes('@rbxts/zone-plus')) {
+    warnings.push('Consider using @rbxts/zone-plus for reliable zone detection instead of Touched events');
+    suggestions.push('Zone-Plus handles overlapping parts and provides better performance');
+  }
+
+  // Check for manual GUI manipulation without Fusion
+  if (code.includes('new Instance') && code.includes('ScreenGui') && !code.includes('@rbxts/fusion')) {
+    suggestions.push('Consider using @rbxts/fusion for reactive UI development');
+  }
+
+  // Check for type annotations
+  if (code.includes('function') && !code.includes(':') && code.includes('=')) {
+    warnings.push('Consider adding explicit type annotations for better type safety');
+    suggestions.push('Example: function processPlayer(player: Player): void { ... }');
+  }
+
+  // Check for proper error handling
+  if (code.includes('pcall') || code.includes('xpcall')) {
+    suggestions.push('Use try-catch blocks for error handling in TypeScript instead of pcall');
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    warnings,
+    suggestions
+  };
+}
+
+/**
+ * Generate boilerplate code for common Roblox-ts patterns
+ */
+function generatePattern(feature: string, libraries: string[] = []): { code: string; explanation: string; dependencies: string[] } {
+  const dependencies: string[] = [];
+  let code = '';
+  let explanation = '';
+
+  switch (feature.toLowerCase()) {
+    case 'player-data':
+    case 'data-management':
+      dependencies.push('@rbxts/profile-store');
+      explanation = 'Complete player data management system using ProfileStore for persistence';
+      code = `// Player Data Management with ProfileStore
+import { ProfileStore } from "@rbxts/profile-store";
+import { Players } from "@rbxts/services";
+
+// Define the player data structure
+interface PlayerProfile {
+  coins: number;
+  level: number;
+  experience: number;
+  inventory: string[];
+  settings: {
+    musicEnabled: boolean;
+    sfxEnabled: boolean;
+  };
+}
+
+// Default profile template
+const ProfileTemplate: PlayerProfile = {
+  coins: 100,
+  level: 1,
+  experience: 0,
+  inventory: [],
+  settings: {
+    musicEnabled: true,
+    sfxEnabled: true,
+  },
+};
+
+// Create ProfileStore
+const PlayerProfiles = ProfileStore.create("PlayerData", ProfileTemplate);
+
+export class PlayerDataService {
+  private profiles = new Map<Player, typeof PlayerProfiles.mock>();
+
+  public async loadPlayer(player: Player): Promise<boolean> {
+    const profile = PlayerProfiles.loadProfileAsync(\`Player_\${player.UserId}\`);
+    
+    if (profile) {
+      profile.reconcile();
+      profile.listenToRelease(() => {
+        this.profiles.delete(player);
+        player.kick("Profile session ended");
+      });
+      
+      this.profiles.set(player, profile);
+      return true;
+    }
+    
+    return false;
+  }
+
+  public getProfile(player: Player) {
+    return this.profiles.get(player);
+  }
+
+  public addCoins(player: Player, amount: number): void {
+    const profile = this.getProfile(player);
+    if (profile) {
+      profile.data.coins += amount;
+    }
+  }
+
+  public playerLeaving(player: Player): void {
+    const profile = this.profiles.get(player);
+    if (profile) {
+      profile.release();
+    }
+  }
+}`;
+      break;
+
+    case 'networking':
+    case 'remotes':
+      dependencies.push('@rbxts/net');
+      explanation = 'Type-safe networking setup using @rbxts/net';
+      code = `// Type-safe Networking with @rbxts/net
+import { NetDefinitions } from "@rbxts/net";
+
+// Define all remote events and functions in a shared module
+const remotes = NetDefinitions.create({
+  // Server to Client events
+  PlayerJoined: NetDefinitions.serverToClientEvent<[player: Player]>(),
+  CoinUpdate: NetDefinitions.serverToClientEvent<[newAmount: number]>(),
+  
+  // Client to Server events
+  BuyItem: NetDefinitions.clientToServerEvent<[itemId: string, cost: number]>(),
+  RequestData: NetDefinitions.clientToServerEvent<[]>(),
+  
+  // Remote functions
+  GetPlayerStats: NetDefinitions.clientToServerFunction<[], { level: number; coins: number }>(),
+});
+
+// Export for use in client and server
+export default remotes;
+
+// Server usage example:
+// remotes.server.PlayerJoined.sendToAllClients(player);
+// remotes.server.BuyItem.connect((player, itemId, cost) => {
+//   // Handle purchase logic
+// });
+
+// Client usage example:
+// remotes.client.CoinUpdate.connect((newAmount) => {
+//   updateCoinDisplay(newAmount);
+// });
+// remotes.client.BuyItem.sendToServer("sword", 100);`;
+      break;
+
+    case 'zone':
+    case 'area-detection':
+      dependencies.push('@rbxts/zone-plus');
+      explanation = 'Zone detection system using Zone-Plus for reliable spatial detection';
+      code = `// Zone Detection with Zone-Plus
+import { Zone } from "@rbxts/zone-plus";
+import { Players } from "@rbxts/services";
+
+export class ZoneManager {
+  private zones = new Map<string, Zone>();
+
+  public createZone(name: string, container: Model | Folder): Zone {
+    const zone = new Zone(container);
+    this.zones.set(name, zone);
+
+    // Set up zone events
+    zone.playerEntered.Connect((player) => {
+      this.onPlayerEnterZone(name, player);
+    });
+
+    zone.playerExited.Connect((player) => {
+      this.onPlayerExitZone(name, player);
+    });
+
+    return zone;
+  }
+
+  public getZone(name: string): Zone | undefined {
+    return this.zones.get(name);
+  }
+
+  public getPlayersInZone(name: string): Player[] {
+    const zone = this.zones.get(name);
+    return zone ? zone.getPlayers() : [];
+  }
+
+  public isPlayerInZone(name: string, player: Player): boolean {
+    const zone = this.zones.get(name);
+    return zone ? zone.findPlayer(player) !== undefined : false;
+  }
+
+  private onPlayerEnterZone(zoneName: string, player: Player): void {
+    print(\`\${player.Name} entered zone: \${zoneName}\`);
+    
+    // Add zone-specific logic here
+    switch (zoneName) {
+      case "safe-zone":
+        // Apply safe zone effects
+        break;
+      case "pvp-zone":
+        // Enable PvP for player
+        break;
+    }
+  }
+
+  private onPlayerExitZone(zoneName: string, player: Player): void {
+    print(\`\${player.Name} exited zone: \${zoneName}\`);
+    
+    // Remove zone-specific effects
+  }
+}`;
+      break;
+
+    case 'ui':
+    case 'interface':
+      dependencies.push('@rbxts/fusion');
+      explanation = 'Reactive UI system using Fusion for dynamic interfaces';
+      code = `// Reactive UI with Fusion
+import { New, Value, Computed } from "@rbxts/fusion";
+import { Players } from "@rbxts/services";
+
+const playerGui = Players.LocalPlayer.WaitForChild("PlayerGui") as PlayerGui;
+
+// Reactive state
+const playerCoins = Value(100);
+const playerLevel = Value(1);
+const isShopOpen = Value(false);
+
+// Computed values
+const levelProgress = Computed(() => {
+  const level = playerLevel.get();
+  return \`Level \${level} (\${level * 100} XP to next)\`;
+});
+
+// Create main UI
+const mainGui = New("ScreenGui")({
+  Name: "MainGui",
+  Parent: playerGui,
+  
+  Children: [
+    // Coin display
+    New("Frame")({
+      Name: "CoinFrame",
+      Size: new UDim2(0, 200, 0, 50),
+      Position: new UDim2(0, 10, 0, 10),
+      BackgroundColor3: Color3.fromRGB(0, 0, 0),
+      BackgroundTransparency: 0.3,
+      
+      Children: [
+        New("TextLabel")({
+          Size: new UDim2(1, 0, 1, 0),
+          BackgroundTransparency: 1,
+          Text: Computed(() => \`Coins: \${playerCoins.get()}\`),
+          TextColor3: Color3.fromRGB(255, 255, 255),
+          TextScaled: true,
+          Font: Enum.Font.GothamBold,
+        }),
+      ],
+    }),
+    
+    // Level display
+    New("Frame")({
+      Name: "LevelFrame",
+      Size: new UDim2(0, 200, 0, 50),
+      Position: new UDim2(0, 10, 0, 70),
+      BackgroundColor3: Color3.fromRGB(0, 100, 0),
+      BackgroundTransparency: 0.3,
+      
+      Children: [
+        New("TextLabel")({
+          Size: new UDim2(1, 0, 1, 0),
+          BackgroundTransparency: 1,
+          Text: levelProgress,
+          TextColor3: Color3.fromRGB(255, 255, 255),
+          TextScaled: true,
+          Font: Enum.Font.Gotham,
+        }),
+      ],
+    }),
+    
+    // Shop button
+    New("TextButton")({
+      Name: "ShopButton",
+      Size: new UDim2(0, 100, 0, 50),
+      Position: new UDim2(1, -110, 0, 10),
+      BackgroundColor3: Color3.fromRGB(100, 0, 100),
+      Text: "Shop",
+      TextColor3: Color3.fromRGB(255, 255, 255),
+      TextScaled: true,
+      Font: Enum.Font.GothamBold,
+      
+      [New.Event("Activated")] = () => {
+        isShopOpen.set(!isShopOpen.get());
+      },
+    }),
+  ],
+});
+
+// Export functions to update state
+export const UIController = {
+  updateCoins: (amount: number) => playerCoins.set(amount),
+  updateLevel: (level: number) => playerLevel.set(level),
+  toggleShop: () => isShopOpen.set(!isShopOpen.get()),
+};`;
+      break;
+
+    case 'service':
+    case 'game-service':
+      explanation = 'Server-side service template following best practices';
+      code = `// Game Service Template
+import { Players, RunService } from "@rbxts/services";
+
+export class GameService {
+  private isRunning = false;
+  private connections: RBXScriptConnection[] = [];
+
+  public start(): void {
+    if (this.isRunning) return;
+    
+    this.isRunning = true;
+    this.setupConnections();
+    this.onStart();
+  }
+
+  public stop(): void {
+    if (!this.isRunning) return;
+    
+    this.isRunning = false;
+    this.cleanupConnections();
+    this.onStop();
+  }
+
+  protected onStart(): void {
+    // Override in subclasses for start logic
+  }
+
+  protected onStop(): void {
+    // Override in subclasses for cleanup logic
+  }
+
+  private setupConnections(): void {
+    // Player connections
+    this.connections.push(
+      Players.PlayerAdded.Connect((player) => this.onPlayerAdded(player))
+    );
+    
+    this.connections.push(
+      Players.PlayerRemoving.Connect((player) => this.onPlayerRemoving(player))
+    );
+
+    // Game loop connection (if needed)
+    this.connections.push(
+      RunService.Heartbeat.Connect((deltaTime) => this.onUpdate(deltaTime))
+    );
+  }
+
+  private cleanupConnections(): void {
+    for (const connection of this.connections) {
+      connection.Disconnect();
+    }
+    this.connections.clear();
+  }
+
+  protected onPlayerAdded(player: Player): void {
+    print(\`Player \${player.Name} joined the game\`);
+    // Override in subclasses
+  }
+
+  protected onPlayerRemoving(player: Player): void {
+    print(\`Player \${player.Name} is leaving the game\`);
+    // Override in subclasses
+  }
+
+  protected onUpdate(deltaTime: number): void {
+    // Override in subclasses for game loop logic
+  }
+}`;
+      break;
+
+    default:
+      explanation = 'Basic Roblox-ts class template';
+      code = `// Basic Roblox-ts Class Template
+export class ${feature.replace(/[^a-zA-Z0-9]/g, '')} {
+  constructor() {
+    // Initialize your class here
+  }
+
+  public start(): void {
+    // Start logic here
+  }
+
+  public stop(): void {
+    // Cleanup logic here
+  }
+}`;
+      break;
+  }
+
+  return { code, explanation, dependencies };
+}
+
+/**
+ * Simulate TypeScript to Lua compilation
+ */
+function simulateBuild(code: string, target: 'server' | 'client' | 'shared' = 'shared'): { success: boolean; output?: string; errors?: string[] } {
+  const errors: string[] = [];
+  
+  // Check for common compilation issues
+  if (code.includes('document') || code.includes('window')) {
+    errors.push('Browser APIs like "document" and "window" are not available in Roblox Lua');
+  }
+  
+  if (code.includes('localStorage') || code.includes('sessionStorage')) {
+    errors.push('Web storage APIs are not available in Roblox - use DataStoreService or ProfileStore');
+  }
+  
+  if (code.includes('fetch') || code.includes('XMLHttpRequest')) {
+    errors.push('HTTP APIs are not available in Roblox client - use HttpService on server');
+  }
+  
+  if (target === 'client' && code.includes('HttpService')) {
+    errors.push('HttpService is only available on the server');
+  }
+  
+  if (target === 'client' && code.includes('DataStoreService')) {
+    errors.push('DataStoreService is only available on the server');
+  }
+
+  if (errors.length > 0) {
+    return { success: false, errors };
+  }
+
+  // Simulate successful compilation
+  const luaOutput = `-- Compiled Lua output (simulated)
+-- Target: ${target}
+-- Original TypeScript compiled successfully
+
+${code.split('\n').map(line => `-- ${line}`).join('\n')}
+
+-- Note: This is a simulation. Actual roblox-ts compilation would produce optimized Lua code.`;
+
+  return { success: true, output: luaOutput };
+}
 
 /**
  * Search Roblox documentation for relevant content
@@ -324,134 +809,6 @@ export function addTools(server: Server): void {
             },
             required: ['packageName', 'codeSnippet']
           }
-        },
-        {
-          name: 'gdd-manager',
-          description: 'Manage Game Design Documents with structured operations for reading, updating, and querying GDD content including milestones, features, tasks, and documentation sections',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              action: {
-                type: 'string',
-                enum: [
-                  'read',
-                  'update_frontmatter',
-                  'update_content',
-                  'add_feature',
-                  'update_feature',
-                  'add_task',
-                  'update_task',
-                  'query_milestones',
-                  'query_features',
-                  'query_tasks',
-                  'validate_structure',
-                  'export_summary'
-                ],
-                description: 'The operation to perform on the GDD'
-              },
-              file_path: {
-                type: 'string',
-                description: 'Path to the GDD file (required for all actions)'
-              },
-              updates: {
-                type: 'object',
-                description: 'Object containing fields to update (for update actions)',
-                additionalProperties: true
-              },
-              section: {
-                type: 'string',
-                description: 'Section header to update (for update_content action)'
-              },
-              content: {
-                type: 'string',
-                description: 'New content for the section (for update_content action)'
-              },
-              operation: {
-                type: 'string',
-                enum: ['replace', 'append', 'prepend'],
-                description: 'How to modify the section content'
-              },
-              feature: {
-                type: 'object',
-                description: 'Feature data (for add_feature action)',
-                properties: {
-                  id: { type: 'string' },
-                  title: { type: 'string' },
-                  milestone: { type: 'string' },
-                  priority: { type: 'string', enum: ['P1', 'P2', 'P3'] },
-                  acceptance: { type: 'array', items: { type: 'string' } },
-                  tasks: {
-                    type: 'array',
-                    items: {
-                      type: 'object',
-                      properties: {
-                        id: { type: 'string' },
-                        title: { type: 'string' },
-                        estimate: { type: 'number' }
-                      }
-                    }
-                  }
-                }
-              },
-              feature_id: {
-                type: 'string',
-                description: 'ID of the feature to modify'
-              },
-              task: {
-                type: 'object',
-                description: 'Task data (for add_task action)',
-                properties: {
-                  id: { type: 'string' },
-                  title: { type: 'string' },
-                  estimate: { type: 'number' }
-                }
-              },
-              task_id: {
-                type: 'string',
-                description: 'ID of the task to modify'
-              },
-              milestone_id: {
-                type: 'string',
-                description: 'Filter by milestone ID'
-              },
-              include_features: {
-                type: 'boolean',
-                description: 'Include associated features in milestone queries'
-              },
-              milestone: {
-                type: 'string',
-                description: 'Filter by milestone'
-              },
-              priority: {
-                type: 'string',
-                enum: ['P1', 'P2', 'P3'],
-                description: 'Filter by priority'
-              },
-              include_tasks: {
-                type: 'boolean',
-                description: 'Include associated tasks in feature queries'
-              },
-              check_type: {
-                type: 'string',
-                enum: ['all', 'frontmatter', 'content', 'references'],
-                description: 'Type of validation to perform'
-              },
-              format: {
-                type: 'string',
-                enum: ['markdown', 'json', 'csv'],
-                description: 'Output format for summaries'
-              },
-              include: {
-                type: 'array',
-                items: {
-                  type: 'string',
-                  enum: ['milestones', 'features', 'tasks', 'progress', 'estimates']
-                },
-                description: 'Elements to include in summary'
-              }
-            },
-            required: ['action', 'file_path']
-          }
         }
       ]
     };
@@ -662,125 +1019,6 @@ ${packageAnalysis}
             content: [{
               type: 'text',
               text: troubleshootResult
-            }]
-          };
-        }
-
-        case 'gdd-manager': {
-          const parsed = GDDManagerSchema.parse(args);
-          const result = await manageGDD(parsed);
-          
-          if (!result.success) {
-            return {
-              content: [{
-                type: 'text',
-                text: `## GDD Manager Error
-
-**Action:** ${parsed.action}
-**File:** ${parsed.file_path}
-**Error:** ${result.error}
-
-${result.warnings && result.warnings.length > 0 ? `**Warnings:**\n${result.warnings.map(w => `- ${w}`).join('\n')}` : ''}`
-              }]
-            };
-          }
-
-          // Format success response based on action
-          let responseText = `## GDD Manager - ${parsed.action}
-
-**File:** ${parsed.file_path}
-**Status:** ✅ Success
-
-`;
-
-          // Add metadata if available
-          if (result.metadata) {
-            responseText += `**File Info:**
-- Size: ${result.metadata.fileSize} bytes
-- Last Modified: ${new Date(result.metadata.lastModified).toLocaleString()}
-- Features: ${result.metadata.featureCount}
-- Tasks: ${result.metadata.taskCount}
-
-`;
-          }
-
-          // Add warnings if any
-          if (result.warnings && result.warnings.length > 0) {
-            responseText += `**Warnings:**
-${result.warnings.map(w => `⚠️ ${w}`).join('\n')}
-
-`;
-          }
-
-          // Format result data based on action type
-          switch (parsed.action) {
-            case 'read':
-              responseText += `**Project:** ${result.data.frontmatter.project}
-**Version:** ${result.data.frontmatter.version}
-**Milestones:** ${result.data.frontmatter.milestones.length}
-**Features:** ${result.data.frontmatter.features.length}
-
-**Content Preview:**
-\`\`\`markdown
-${result.data.content.slice(0, 300)}${result.data.content.length > 300 ? '...' : ''}
-\`\`\``;
-              break;
-
-            case 'query_milestones':
-            case 'query_features':
-            case 'query_tasks':
-              responseText += `**Query Results:**
-\`\`\`json
-${JSON.stringify(result.data, null, 2)}
-\`\`\``;
-              break;
-
-            case 'validate_structure':
-              responseText += `**Validation Results:**
-- **Valid:** ${result.data.valid ? '✅ Yes' : '❌ No'}
-- **Errors:** ${result.data.errors.length}
-- **Warnings:** ${result.data.warnings.length}
-
-${result.data.errors.length > 0 ? `**Errors:**\n${result.data.errors.map((e: string) => `❌ ${e}`).join('\n')}\n` : ''}
-${result.data.warnings.length > 0 ? `**Warnings:**\n${result.data.warnings.map((w: string) => `⚠️ ${w}`).join('\n')}\n` : ''}`;
-              break;
-
-            case 'export_summary':
-              responseText += `**Summary Export:**
-\`\`\`${parsed.format || 'markdown'}
-${result.data}
-\`\`\``;
-              break;
-
-            case 'add_feature':
-            case 'update_feature':
-              responseText += `**Feature Details:**
-- **ID:** ${result.data.id}
-- **Title:** ${result.data.title}
-- **Milestone:** ${result.data.milestone}
-- **Priority:** ${result.data.priority}
-- **Tasks:** ${result.data.tasks.length}`;
-              break;
-
-            case 'add_task':
-            case 'update_task':
-              responseText += `**Task Details:**
-- **ID:** ${result.data.id}
-- **Title:** ${result.data.title}
-- **Estimate:** ${result.data.estimate || 'Not specified'}`;
-              break;
-
-            default:
-              responseText += `**Result:**
-\`\`\`json
-${JSON.stringify(result.data, null, 2)}
-\`\`\``;
-          }
-
-          return {
-            content: [{
-              type: 'text',
-              text: responseText
             }]
           };
         }
