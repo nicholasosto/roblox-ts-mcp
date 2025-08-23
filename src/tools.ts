@@ -112,6 +112,243 @@ function generatePattern(feature: string, libraries: string[] = []): { code: str
   let explanation = '';
 
   switch (feature.toLowerCase()) {
+    case 'attributes-catalog':
+    case 'attributes':
+    case 'attribute-catalog': {
+      explanation = 'Attributes Catalog: KEYS + derived key type, meta with attribute name, type, default, and optional numeric bounds; map satisfies Record<CatalogKey, CatalogMeta>.';
+      code = `/**
+ * REQUIRED Pattern: Attributes Catalog
+ * - Do NOT rename identifiers or alter derivations.
+ * - Designed for Roblox Instance Attributes (SetAttribute/GetAttribute).
+ */
+
+/* REQUIRED: KEYS — Do NOT rename this constant or remove 'as const'. */
+export const CATALOG_KEYS = [
+  "HEALTH",
+  "STAMINA",
+  "MANA",
+  "IS_NPC",
+] as const;
+
+/* REQUIRED: Key type — must be derived from CATALOG_KEYS; do NOT change derivation style. */
+export type CatalogKey = typeof CATALOG_KEYS[number];
+
+/* Attribute data types supported by this catalog */
+export type AttributeType = 'number' | 'string' | 'boolean' | 'Vector3' | 'Color3';
+
+/* REQUIRED: Meta interface — core fields for attributes. */
+export interface CatalogMeta {
+  key: CatalogKey;
+  /** The actual attribute name stored on the Instance */
+  attribute: string;
+  description: string;
+  type: AttributeType;
+  /** Default value to apply when missing */
+  default: number | string | boolean | Vector3 | Color3;
+  /** Optional numeric bounds (only applicable when type === 'number') */
+  min?: number;
+  max?: number;
+  /** Whether this attribute is expected to replicate (Attributes replicate by default) */
+  replicate?: boolean;
+}
+
+/* REQUIRED: Catalog map — must cover ALL keys and MUST use 'satisfies Record<CatalogKey, CatalogMeta>'. */
+export const CATALOG_META = {
+  HEALTH: {
+    key: "HEALTH",
+    attribute: "Health",
+    description: "Current health points for a character or entity.",
+    type: 'number',
+    default: 100,
+    min: 0,
+    max: 100,
+    replicate: true,
+  },
+  STAMINA: {
+    key: "STAMINA",
+    attribute: "Stamina",
+    description: "Energy used for sprinting and actions.",
+    type: 'number',
+    default: 50,
+    min: 0,
+    max: 100,
+    replicate: true,
+  },
+  MANA: {
+    key: "MANA",
+    attribute: "Mana",
+    description: "Resource for casting abilities.",
+    type: 'number',
+    default: 0,
+    min: 0,
+    max: 100,
+    replicate: true,
+  },
+  IS_NPC: {
+    key: "IS_NPC",
+    attribute: "IsNPC",
+    description: "Marks a character as an NPC.",
+    type: 'boolean',
+    default: false,
+    replicate: true,
+  },
+} satisfies Record<CatalogKey, CatalogMeta>;`;
+      break;
+    }
+    case 'damage-types-catalog':
+    case 'damage-types':
+    case 'arpg-damage-types':
+      explanation = 'Action RPG Damage Types catalog: KEYS, derived key type, meta interface (no min/max), and a catalog map that satisfies Record<CatalogKey, CatalogMeta>.';
+      code = `/**
+ * REQUIRED Pattern: Damage Types Catalog (Action RPG)
+ * - Do NOT rename identifiers or alter derivations.
+ * - No min/max fields for damage types.
+ */
+
+/* REQUIRED: KEYS — Do NOT rename this constant or remove 'as const'. */
+export const CATALOG_KEYS = [
+  "PHYSICAL",
+  "SLASH",
+  "PIERCE",
+  "BLUNT",
+  "FIRE",
+  "ICE",
+  "LIGHTNING",
+  "POISON",
+  "HOLY",
+  "SHADOW",
+  "ARCANE",
+  "TRUE",
+] as const;
+
+/* REQUIRED: Key type — must be derived from CATALOG_KEYS; do NOT change derivation style. */
+export type CatalogKey = typeof CATALOG_KEYS[number];
+
+/* REQUIRED: Meta interface — core fields for damage types (no min/max). */
+export interface CatalogMeta {
+  key: CatalogKey;
+  description: string;
+  icon: string; // URL or asset ID with descriptive_underscored_name
+}
+
+/* REQUIRED: Catalog map — must cover ALL keys and MUST use 'satisfies Record<CatalogKey, CatalogMeta>'. */
+export const CATALOG_META = {
+  PHYSICAL: {
+    key: "PHYSICAL",
+    description: "Base non-elemental damage; typically mitigated by armor.",
+    icon: "https://assets.yourgame.com/icons/damage_physical.png",
+  },
+  SLASH: {
+    key: "SLASH",
+    description: "Cutting damage from blades; excels versus unarmored foes.",
+    icon: "https://assets.yourgame.com/icons/damage_slash.png",
+  },
+  PIERCE: {
+    key: "PIERCE",
+    description: "Penetrating damage from arrows/spears; strong vs. light armor.",
+    icon: "https://assets.yourgame.com/icons/damage_pierce.png",
+  },
+  BLUNT: {
+    key: "BLUNT",
+    description: "Impact damage from hammers/maces; effective vs. heavy armor.",
+    icon: "https://assets.yourgame.com/icons/damage_blunt.png",
+  },
+  FIRE: {
+    key: "FIRE",
+    description: "Burning damage; may apply ignite over time.",
+    icon: "https://assets.yourgame.com/icons/damage_fire.png",
+  },
+  ICE: {
+    key: "ICE",
+    description: "Chilling damage; may slow or freeze targets.",
+    icon: "https://assets.yourgame.com/icons/damage_ice.png",
+  },
+  LIGHTNING: {
+    key: "LIGHTNING",
+    description: "Shock damage; may stun or chain to nearby enemies.",
+    icon: "https://assets.yourgame.com/icons/damage_lightning.png",
+  },
+  POISON: {
+    key: "POISON",
+    description: "Toxic damage; commonly applies damage over time (DoT).",
+    icon: "https://assets.yourgame.com/icons/damage_poison.png",
+  },
+  HOLY: {
+    key: "HOLY",
+    description: "Radiant damage; especially effective against undead.",
+    icon: "https://assets.yourgame.com/icons/damage_holy.png",
+  },
+  SHADOW: {
+    key: "SHADOW",
+    description: "Dark damage; corrupting force effective against light-aligned.",
+    icon: "https://assets.yourgame.com/icons/damage_shadow.png",
+  },
+  ARCANE: {
+    key: "ARCANE",
+    description: "Pure magical damage; often bypasses mundane resistances.",
+    icon: "https://assets.yourgame.com/icons/damage_arcane.png",
+  },
+  TRUE: {
+    key: "TRUE",
+    description: "Unmitigated damage that ignores defenses and resistances.",
+    icon: "https://assets.yourgame.com/icons/damage_true.png",
+  },
+} satisfies Record<CatalogKey, CatalogMeta>;`;
+      break;
+    case 'key-meta-catalog':
+    case 'catalog-meta':
+    case 'key-meta':
+      explanation = 'Key/Meta Catalog pattern: defines KEYS, derived key type, meta interface, and a catalog map that satisfies Record<CatalogKey, CatalogMeta>.';
+      code = `/**
+ * REQUIRED Pattern: Key/Meta Catalog
+ * - Do NOT rename the identifiers below or alter their derivations.
+ * - Generators and validators expect this exact shape.
+ */
+
+/* REQUIRED: KEYS — Do NOT rename this constant or remove 'as const'. */
+export const CATALOG_KEYS = [
+  "EXAMPLE_KEY_1",
+  "EXAMPLE_KEY_2",
+  "EXAMPLE_KEY_3",
+] as const;
+
+/* REQUIRED: Key type — must be derived from CATALOG_KEYS; do NOT change derivation style. */
+export type CatalogKey = typeof CATALOG_KEYS[number];
+
+/* REQUIRED: Meta interface — core fields are mandatory; add fields only in an additive, backward-compatible way. */
+export interface CatalogMeta {
+  key: CatalogKey;
+  description: string;
+  icon: string; // URL or asset ID
+  maxValue: number;
+  minValue: number;
+}
+
+/* REQUIRED: Catalog map — must cover ALL keys and MUST use 'satisfies Record<CatalogKey, CatalogMeta>'. */
+export const CATALOG_META = {
+  EXAMPLE_KEY_1: {
+    key: "EXAMPLE_KEY_1",
+    description: "An example key for demonstration purposes.",
+    icon: "rbxassetid://123456789",
+    maxValue: 100,
+    minValue: 0,
+  },
+  EXAMPLE_KEY_2: {
+    key: "EXAMPLE_KEY_2",
+    description: "Another example key for demonstration purposes.",
+    icon: "rbxassetid://987654321",
+    maxValue: 200,
+    minValue: 50,
+  },
+  EXAMPLE_KEY_3: {
+    key: "EXAMPLE_KEY_3",
+    description: "Yet another example key for demonstration purposes.",
+    icon: "rbxassetid://456789123",
+    maxValue: 300,
+    minValue: 100,
+  },
+} satisfies Record<CatalogKey, CatalogMeta>;`;
+      break;
     case 'player-data':
     case 'data-management':
       dependencies.push('@rbxts/profile-store');
@@ -454,8 +691,8 @@ export class GameService {
       break;
 
     default:
-      explanation = 'Basic Roblox-ts class template';
-      code = `// Basic Roblox-ts Class Template
+  explanation = 'Basic Roblox-ts class template';
+  code = `// Basic Roblox-ts Class Template
 export class ${feature.replace(/[^a-zA-Z0-9]/g, '')} {
   constructor() {
     // Initialize your class here
@@ -469,7 +706,7 @@ export class ${feature.replace(/[^a-zA-Z0-9]/g, '')} {
     // Cleanup logic here
   }
 }`;
-      break;
+  break;
   }
 
   return { code, explanation, dependencies };

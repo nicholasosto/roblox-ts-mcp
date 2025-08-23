@@ -48,22 +48,12 @@ const player = Players.LocalPlayer;`
   {
     tool: "generate-pattern",
     cases: [
-      {
-        name: "Networking Pattern",
-        args: { feature: "networking", libraries: ["net"] }
-      },
-      {
-        name: "Player Data Pattern",
-        args: { feature: "player-data", libraries: ["profile-store"] }
-      },
-      {
-        name: "Zone Detection Pattern",
-        args: { feature: "zone", libraries: ["zone-plus"] }
-      },
-      {
-        name: "UI Pattern with Fusion",
-        args: { feature: "ui", libraries: ["fusion"] }
-      }
+      { name: "Networking Pattern", args: { feature: "networking", libraries: ["net"] } },
+      { name: "Player Data Pattern", args: { feature: "player-data", libraries: ["profile-store"] } },
+      { name: "Zone Detection Pattern", args: { feature: "zone", libraries: ["zone-plus"] } },
+      { name: "Damage Types Catalog", args: { feature: "damage-types-catalog" } },
+      { name: "Key/Meta Catalog", args: { feature: "key-meta-catalog" } },
+      { name: "UI Pattern with Fusion", args: { feature: "ui", libraries: ["fusion"] } }
     ]
   },
   
